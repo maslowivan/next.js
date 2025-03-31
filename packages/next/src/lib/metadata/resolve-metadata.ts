@@ -333,11 +333,11 @@ function mergeViewport({
   }
 }
 
-function getDefinedViewport(
+async function getDefinedViewport(
   mod: any,
   props: any,
   tracingProps: { route: string }
-): Viewport | ViewportResolver | null {
+): Promise<Viewport | ViewportResolver | null> {
   if (typeof mod.generateViewport === 'function') {
     const { route } = tracingProps
     return (parent: ResolvingViewport) =>
@@ -355,11 +355,11 @@ function getDefinedViewport(
   return mod.viewport || null
 }
 
-function getDefinedMetadata(
+async function getDefinedMetadata(
   mod: any,
   props: any,
   tracingProps: { route: string }
-): Metadata | MetadataResolver | null {
+): Promise<Metadata | MetadataResolver | null> {
   if (typeof mod.generateMetadata === 'function') {
     const { route } = tracingProps
     return (parent: ResolvingMetadata) =>
@@ -455,19 +455,23 @@ async function collectMetadata({
   }
 
   const staticFilesMetadata = await resolveStaticMetadata(tree[2], props)
-  const metadataExport = mod ? getDefinedMetadata(mod, props, { route }) : null
+  const metadataExport = mod
+    ? await getDefinedMetadata(mod, props, { route })
+    : null
 
-  const viewportExport = mod ? getDefinedViewport(mod, props, { route }) : null
+  const viewportExport = mod
+    ? await getDefinedViewport(mod, props, { route })
+    : null
 
   metadataItems.push([metadataExport, staticFilesMetadata, viewportExport])
 
   if (hasErrorConventionComponent && errorConvention) {
     const errorMod = await getComponentTypeModule(tree, errorConvention)
     const errorViewportExport = errorMod
-      ? getDefinedViewport(errorMod, props, { route })
+      ? await getDefinedViewport(errorMod, props, { route })
       : null
     const errorMetadataExport = errorMod
-      ? getDefinedMetadata(errorMod, props, { route })
+      ? await getDefinedMetadata(errorMod, props, { route })
       : null
 
     errorMetadataItem[0] = errorMetadataExport
