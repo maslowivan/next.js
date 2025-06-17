@@ -855,26 +855,31 @@ impl<B: BackingStorage> TurboTasksBackendInner<B> {
                 return (None, None);
             }
             let len = inner.len();
-            let mut meta = Vec::with_capacity(len);
-            let mut data = Vec::with_capacity(len);
+
+            let meta_restored = inner.state().meta_restored();
+            let data_restored = inner.state().data_restored();
+
+            let mut meta = meta_restored.then(|| Vec::with_capacity(len));
+            let mut data = data_restored.then(|| Vec::with_capacity(len));
             for (key, value) in inner.iter_all() {
                 if key.is_persistent() && value.is_persistent() {
                     match key.category() {
                         TaskDataCategory::Meta => {
-                            meta.push(CachedDataItem::from_key_and_value_ref(key, value))
+                            if let Some(meta) = &mut meta {
+                                meta.push(CachedDataItem::from_key_and_value_ref(key, value))
+                            }
                         }
                         TaskDataCategory::Data => {
-                            data.push(CachedDataItem::from_key_and_value_ref(key, value))
+                            if let Some(data) = &mut data {
+                                data.push(CachedDataItem::from_key_and_value_ref(key, value))
+                            }
                         }
                         _ => {}
                     }
                 }
             }
 
-            (
-                inner.state().meta_restored().then_some(meta),
-                inner.state().data_restored().then_some(data),
-            )
+            (meta, data)
         };
         let process = |task_id: TaskId, (meta, data): (Option<Vec<_>>, Option<Vec<_>>)| {
             (
