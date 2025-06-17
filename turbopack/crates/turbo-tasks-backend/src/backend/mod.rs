@@ -1627,7 +1627,7 @@ impl<B: BackingStorage> TurboTasksBackendInner<B> {
             // new_children list now.
             AggregationUpdateQueue::run(
                 AggregationUpdateJob::DecreaseActiveCounts {
-                    task_ids: new_children.into_iter().collect(),
+                    task_ids: new_children.into_keys().collect(),
                 },
                 &mut ctx,
             );
@@ -1675,10 +1675,12 @@ impl<B: BackingStorage> TurboTasksBackendInner<B> {
         let mut old_edges = Vec::new();
 
         let has_children = !new_children.is_empty();
+        let has_mutable_children =
+            has_children && new_children.values().any(|is_immutable| !*is_immutable);
 
-        // If the task is not stateful and has no children, it does not have a way to be invalidated
-        // and we can mark it as immutable.
-        if !stateful && !has_children {
+        // If the task is not stateful and has no mutable children, it does not have a way to be
+        // invalidated and we can mark it as immutable.
+        if !stateful && !has_mutable_children {
             task.mark_as_immutable();
         }
 
@@ -1691,7 +1693,7 @@ impl<B: BackingStorage> TurboTasksBackendInner<B> {
         if has_children {
             old_edges.extend(
                 iter_many!(task, Child { task } => task)
-                    .filter(|task| !new_children.remove(task))
+                    .filter(|task| new_children.remove(task).is_none())
                     .map(OutdatedEdge::Child),
             );
         } else {
@@ -1722,7 +1724,7 @@ impl<B: BackingStorage> TurboTasksBackendInner<B> {
                     }),
             );
         }
-        if self.should_track_dependencies() {
+        if !task.is_immutable() && self.should_track_dependencies() {
             old_edges.extend(iter_many!(task, OutdatedCellDependency { target } => OutdatedEdge::CellDependency(target)));
             old_edges.extend(iter_many!(task, OutdatedOutputDependency { target } => OutdatedEdge::OutputDependency(target)));
             old_edges.extend(
@@ -1788,7 +1790,7 @@ impl<B: BackingStorage> TurboTasksBackendInner<B> {
             // that. (We already filtered out the old children from that list)
             AggregationUpdateQueue::run(
                 AggregationUpdateJob::DecreaseActiveCounts {
-                    task_ids: new_children.into_iter().collect(),
+                    task_ids: new_children.into_keys().collect(),
                 },
                 &mut ctx,
             );
