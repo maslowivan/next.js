@@ -8,6 +8,8 @@ import type { DevIndicatorServerState } from '../../server/dev/dev-indicator-ser
 import { parseStack } from '../../server/lib/parse-stack'
 import { isConsoleError } from '../shared/console-error'
 
+export type Corners = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+
 type FastRefreshState =
   /** No refresh in progress. */
   | { type: 'idle' }
@@ -30,6 +32,7 @@ export interface OverlayState {
   routerType: 'pages' | 'app'
   isErrorOverlayOpen: boolean
   isDevToolsPanelOpen: boolean
+  devToolsPosition: Corners
 }
 export type OverlayDispatch = React.Dispatch<DispatcherEvent>
 
@@ -56,6 +59,8 @@ export const ACTION_RENDERING_INDICATOR_HIDE = 'rendering-indicator-hide'
 export const ACTION_DEVTOOLS_PANEL_OPEN = 'devtools-panel-open'
 export const ACTION_DEVTOOLS_PANEL_CLOSE = 'devtools-panel-close'
 export const ACTION_DEVTOOLS_PANEL_TOGGLE = 'devtools-panel-toggle'
+
+export const ACTION_DEVTOOLS_POSITION = 'devtools-position'
 
 export const STORAGE_KEY_THEME = '__nextjs-dev-tools-theme'
 export const STORAGE_KEY_POSITION = '__nextjs-dev-tools-position'
@@ -138,6 +143,11 @@ export interface DevToolsPanelToggleAction {
   type: typeof ACTION_DEVTOOLS_PANEL_TOGGLE
 }
 
+export interface DevToolsIndicatorPositionAction {
+  type: typeof ACTION_DEVTOOLS_POSITION
+  devToolsPosition: Corners
+}
+
 export type DispatcherEvent =
   | BuildOkAction
   | BuildErrorAction
@@ -159,6 +169,7 @@ export type DispatcherEvent =
   | DevToolsPanelOpenAction
   | DevToolsPanelCloseAction
   | DevToolsPanelToggleAction
+  | DevToolsIndicatorPositionAction
 
 const REACT_ERROR_STACK_BOTTOM_FRAME_REGEX =
   // 1st group: v8
@@ -198,6 +209,7 @@ export const INITIAL_OVERLAY_STATE: Omit<
   versionInfo: { installed: '0.0.0', staleness: 'unknown' },
   debugInfo: { devtoolsFrontendUrl: undefined },
   isDevToolsPanelOpen: false,
+  devToolsPosition: 'bottom-left',
 }
 
 function getInitialState(
@@ -368,6 +380,9 @@ export function useErrorOverlayReducer(
         }
         case ACTION_DEVTOOLS_PANEL_TOGGLE: {
           return { ...state, isDevToolsPanelOpen: !state.isDevToolsPanelOpen }
+        }
+        case ACTION_DEVTOOLS_POSITION: {
+          return { ...state, devToolsPosition: action.devToolsPosition }
         }
         default: {
           return state
