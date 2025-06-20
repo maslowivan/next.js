@@ -1,4 +1,4 @@
-import type { OverlayDispatch, OverlayState } from '../../shared'
+import type { OverlayDispatch, OverlayState, Corners } from '../../shared'
 
 import { useState } from 'react'
 
@@ -9,6 +9,8 @@ import { Overlay } from '../overlay/overlay'
 import {
   ACTION_DEVTOOLS_PANEL_CLOSE,
   ACTION_DEVTOOLS_POSITION,
+  ACTION_DEVTOOLS_SCALE,
+  STORAGE_KEY_SCALE,
   STORAGE_KEY_POSITION,
 } from '../../shared'
 import { css } from '../../utils/css'
@@ -34,8 +36,24 @@ export function DevToolsPanel({
   )
   const [vertical, horizontal] = state.devToolsPosition.split('-', 2)
 
-  const onClose = () => {
+  const onCloseDevToolsPanel = () => {
     dispatch({ type: ACTION_DEVTOOLS_PANEL_CLOSE })
+  }
+
+  const handlePositionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    dispatch({
+      type: ACTION_DEVTOOLS_POSITION,
+      devToolsPosition: e.target.value as Corners,
+    })
+    localStorage.setItem(STORAGE_KEY_POSITION, e.target.value)
+  }
+
+  const handleScaleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    dispatch({
+      type: ACTION_DEVTOOLS_SCALE,
+      scale: Number(e.target.value),
+    })
+    localStorage.setItem(STORAGE_KEY_SCALE, e.target.value)
   }
 
   return (
@@ -48,10 +66,10 @@ export function DevToolsPanel({
         [horizontal === 'left' ? 'right' : 'left']: 'auto',
       }}
     >
-      {/* TODO: Investigate why onClose on Dialog doesn't close when clicked outside. */}
+      {/* TODO: Investigate why onCloseDevToolsPanel on Dialog doesn't close when clicked outside. */}
       <OverlayBackdrop
         data-nextjs-devtools-panel-overlay-backdrop
-        onClick={onClose}
+        onClick={onCloseDevToolsPanel}
       />
       <Draggable
         padding={INDICATOR_PADDING}
@@ -70,10 +88,10 @@ export function DevToolsPanel({
             data-nextjs-devtools-panel-dialog
             aria-labelledby="nextjs__container_dev_tools_panel_label"
             aria-describedby="nextjs__container_dev_tools_panel_desc"
-            onClose={onClose}
+            onClose={onCloseDevToolsPanel}
           >
             <DialogContent>
-              <DialogHeader>
+              <DialogHeader data-nextjs-devtools-panel-dialog-header>
                 <div data-nextjs-devtools-panel-header>
                   <div data-nextjs-devtools-panel-header-tab-group>
                     <button
@@ -111,7 +129,7 @@ export function DevToolsPanel({
                     </button>
                     <button
                       data-nextjs-devtools-panel-header-action-button
-                      onClick={onClose}
+                      onClick={onCloseDevToolsPanel}
                     >
                       <Cross width={16} height={16} />
                     </button>
@@ -119,7 +137,13 @@ export function DevToolsPanel({
                 </div>
               </DialogHeader>
               <DialogBody>
-                <DevToolsPanelTab activeTab={activeTab} />
+                <DevToolsPanelTab
+                  activeTab={activeTab}
+                  devToolsPosition={state.devToolsPosition}
+                  scale={state.scale}
+                  handlePositionChange={handlePositionChange}
+                  handleScaleChange={handleScaleChange}
+                />
               </DialogBody>
             </DialogContent>
             <DevToolsPanelFooter versionInfo={state.versionInfo} />
@@ -158,7 +182,6 @@ export const DEVTOOLS_PANEL_STYLES = css`
     /* TODO: Remove once the content is filled. */
     min-width: 800px;
     min-height: 500px;
-
     /* This is handled from dialog/styles.ts */
     max-width: var(--next-dialog-max-width);
   }
