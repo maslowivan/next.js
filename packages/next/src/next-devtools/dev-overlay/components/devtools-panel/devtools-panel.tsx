@@ -2,6 +2,7 @@ import type { OverlayDispatch, OverlayState } from '../../shared'
 
 import { useState } from 'react'
 
+import { DevToolsPanelFooter } from './devtools-panel-footer'
 import { Dialog, DialogContent, DialogHeader, DialogBody } from '../dialog'
 import { Overlay } from '../overlay/overlay'
 import {
@@ -61,61 +62,64 @@ export function DevToolsPanel({
           })
         }}
       >
-        <Dialog
-          data-nextjs-devtools-panel-dialog
-          aria-labelledby="nextjs__container_dev_tools_panel_label"
-          aria-describedby="nextjs__container_dev_tools_panel_desc"
-          onClose={onClose}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <div data-nextjs-devtools-panel-header>
-                <div data-nextjs-devtools-panel-header-tab-group>
-                  <button
-                    data-nextjs-devtools-panel-header-tab={
-                      activeTab === 'issues'
-                    }
-                    onClick={() => setActiveTab('issues')}
-                  >
-                    Issues
-                    <span data-nextjs-devtools-panel-header-tab-issues-badge>
-                      {issueCount}
-                    </span>
-                  </button>
-                  <button
-                    data-nextjs-devtools-panel-header-tab={
-                      activeTab === 'route'
-                    }
-                    onClick={() => setActiveTab('route')}
-                  >
-                    Route Info
-                  </button>
-                  <button
-                    data-nextjs-devtools-panel-header-tab={
-                      activeTab === 'settings'
-                    }
-                    onClick={() => setActiveTab('settings')}
-                  >
-                    Settings
-                  </button>
+        <>
+          <Dialog
+            data-nextjs-devtools-panel-dialog
+            aria-labelledby="nextjs__container_dev_tools_panel_label"
+            aria-describedby="nextjs__container_dev_tools_panel_desc"
+            onClose={onClose}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <div data-nextjs-devtools-panel-header>
+                  <div data-nextjs-devtools-panel-header-tab-group>
+                    <button
+                      data-nextjs-devtools-panel-header-tab={
+                        activeTab === 'issues'
+                      }
+                      onClick={() => setActiveTab('issues')}
+                    >
+                      Issues
+                      <span data-nextjs-devtools-panel-header-tab-issues-badge>
+                        {issueCount}
+                      </span>
+                    </button>
+                    <button
+                      data-nextjs-devtools-panel-header-tab={
+                        activeTab === 'route'
+                      }
+                      onClick={() => setActiveTab('route')}
+                    >
+                      Route Info
+                    </button>
+                    <button
+                      data-nextjs-devtools-panel-header-tab={
+                        activeTab === 'settings'
+                      }
+                      onClick={() => setActiveTab('settings')}
+                    >
+                      Settings
+                    </button>
+                  </div>
+                  <div data-nextjs-devtools-panel-header-action-button-group>
+                    {/* TODO: Currently no-op, will add fullscreen toggle. */}
+                    <button data-nextjs-devtools-panel-header-action-button>
+                      <FullScreenIcon width={16} height={16} />
+                    </button>
+                    <button
+                      data-nextjs-devtools-panel-header-action-button
+                      onClick={onClose}
+                    >
+                      <Cross width={16} height={16} />
+                    </button>
+                  </div>
                 </div>
-                <div data-nextjs-devtools-panel-header-action-button-group>
-                  {/* TODO: Currently no-op, will add fullscreen toggle. */}
-                  <button data-nextjs-devtools-panel-header-action-button>
-                    <FullScreenIcon width={16} height={16} />
-                  </button>
-                  <button
-                    data-nextjs-devtools-panel-header-action-button
-                    onClick={onClose}
-                  >
-                    <Cross width={16} height={16} />
-                  </button>
-                </div>
-              </div>
-            </DialogHeader>
-            <DialogBody></DialogBody>
-          </DialogContent>
-        </Dialog>
+              </DialogHeader>
+              <DialogBody></DialogBody>
+            </DialogContent>
+            <DevToolsPanelFooter versionInfo={state.versionInfo} />
+          </Dialog>
+        </>
       </Draggable>
     </Overlay>
   )
