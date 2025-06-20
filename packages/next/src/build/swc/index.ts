@@ -731,13 +731,14 @@ function bindingToApi(
       )
     }
 
-    compilationEventsSubscribe() {
+    compilationEventsSubscribe(eventTypes?: string[]) {
       return subscribe<TurbopackResult<CompilationEvent>>(
         true,
         async (callback) => {
           binding.projectCompilationEventsSubscribe(
             this._nativeProject,
-            callback
+            callback,
+            eventTypes
           )
         }
       )
