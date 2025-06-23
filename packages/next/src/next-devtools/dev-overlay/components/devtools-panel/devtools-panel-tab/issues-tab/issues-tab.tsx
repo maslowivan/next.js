@@ -2,6 +2,7 @@ import type { DebugInfo } from '../../../../../shared/types'
 import type { ReadyRuntimeError } from '../../../../utils/get-error-by-type'
 import type { HydrationErrorState } from '../../../../../shared/hydration-error'
 
+import { IssuesTabSidebar } from './issues-tab-sidebar'
 import {
   GenericErrorDescription,
   HydrationErrorDescription,
@@ -22,8 +23,15 @@ export function IssuesTab({
   runtimeErrors: ReadyRuntimeError[]
   getSquashedHydrationErrorDetails: (error: Error) => HydrationErrorState | null
 }) {
-  const { isLoading, errorCode, errorType, hydrationWarning, activeError } =
-    useActiveRuntimeError({ runtimeErrors, getSquashedHydrationErrorDetails })
+  const {
+    isLoading,
+    errorCode,
+    errorType,
+    hydrationWarning,
+    activeError,
+    activeIdx,
+    setActiveIndex,
+  } = useActiveRuntimeError({ runtimeErrors, getSquashedHydrationErrorDetails })
 
   if (isLoading) {
     // TODO: better loading state
@@ -42,8 +50,12 @@ export function IssuesTab({
 
   return (
     <div data-nextjs-devtools-panel-tab-issues>
-      {/* TODO: Sidebar */}
-      <aside>Sidebar</aside>
+      <IssuesTabSidebar
+        runtimeErrors={runtimeErrors}
+        errorType={errorType}
+        activeIdx={activeIdx}
+        setActiveIndex={setActiveIndex}
+      />
       <div data-nextjs-devtools-panel-tab-issues-content>
         <div className="nextjs-container-errors-header">
           <div
@@ -77,5 +89,15 @@ export function IssuesTab({
 export const DEVTOOLS_PANEL_TAB_ISSUES_STYLES = css`
   [data-nextjs-devtools-panel-tab-issues] {
     display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+
+  [data-nextjs-devtools-panel-tab-issues-content] {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    min-height: 0;
   }
 `
