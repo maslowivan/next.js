@@ -6,9 +6,9 @@ use rustc_hash::FxHashMap;
 use swc_core::{
     atoms::{Atom, atom},
     base::SwcComments,
-    common::{Mark, SourceMap, comments::Comments, util::take::Take},
+    common::{Mark, SourceMap, comments::Comments},
     ecma::{
-        ast::{Module, ModuleItem, Program, Script},
+        ast::{ModuleItem, Program},
         preset_env::{self, Targets},
         transforms::{base::assumptions::Assumptions, optimization::inline_globals, react::react},
     },
@@ -215,32 +215,14 @@ impl EcmascriptInputTransform {
                     },
                 );
 
-                let module_program = std::mem::replace(program, Program::Module(Module::dummy()));
-
-                let module_program = if let Program::Script(Script {
-                    span,
-                    mut body,
-                    shebang,
-                }) = module_program
-                {
-                    Program::Module(Module {
-                        span,
-                        body: body.drain(..).map(ModuleItem::Stmt).collect(),
-                        shebang,
-                    })
-                } else {
-                    module_program
-                };
-
                 // Explicit type annotation to ensure that we don't duplicate transforms in the
                 // final binary
-                *program =
-                    module_program.apply(preset_env::transform_from_env::<&'_ dyn Comments>(
-                        top_level_mark,
-                        Some(&comments),
-                        config,
-                        Assumptions::default(),
-                    ));
+                program.mutate(preset_env::transform_from_env::<&'_ dyn Comments>(
+                    top_level_mark,
+                    Some(&comments),
+                    config,
+                    Assumptions::default(),
+                ));
             }
             EcmascriptInputTransform::TypeScript {
                 // TODO(WEB-1213)
