@@ -97,6 +97,7 @@ export function DevToolsPanel({
             devToolsPosition: p,
           })
         }}
+        dragHandleSelector="[data-nextjs-devtools-panel-header], [data-nextjs-devtools-panel-footer]"
       >
         <>
           <Dialog
@@ -257,6 +258,15 @@ export const DEVTOOLS_PANEL_STYLES = css`
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid var(--color-gray-400);
+
+    /* For draggable */
+    cursor: move;
+    user-select: none;
+    & > * {
+      cursor: auto;
+      /* user-select: auto; follows the parent (parent none -> child none), so reset the direct child to text */
+      user-select: text;
+    }
   }
 
   [data-nextjs-devtools-panel-header-tab-group] {
