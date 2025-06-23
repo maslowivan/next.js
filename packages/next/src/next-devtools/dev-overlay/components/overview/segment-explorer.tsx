@@ -39,7 +39,6 @@ function PageSegmentTreeLayerPresentation({
   node: SegmentTrieNode
   level: number
 }) {
-  const nodeName = node.value?.type
   const childrenKeys = Object.keys(node.children)
 
   const sortedChildrenKeys = childrenKeys.sort((a, b) => {
@@ -107,42 +106,38 @@ function PageSegmentTreeLayerPresentation({
               ...{ paddingLeft: `${(level + 1) * 8}px` },
             }}
           >
-            <div className="segment-explorer-line">
-              <div className={`segment-explorer-line-text-${nodeName}`}>
-                <div className="segment-explorer-filename">
-                  {folderName && (
-                    <span className="segment-explorer-filename--path">
-                      {folderName}
-                      {/* hidden slashes for testing snapshots */}
-                      <small>{'/'}</small>
-                    </span>
-                  )}
-                  {/* display all the file segments in this level */}
-                  {filesChildrenKeys.length > 0 && (
-                    <span className="segment-explorer-files">
-                      {filesChildrenKeys.map((fileChildSegment) => {
-                        const childNode = node.children[fileChildSegment]
-                        if (!childNode || !childNode.value) {
-                          return null
-                        }
-                        const fileName =
-                          childNode.value.pagePath.split('/').pop() || ''
-                        return (
-                          <span
-                            key={fileChildSegment}
-                            className={cx(
-                              'segment-explorer-file-label',
-                              `segment-explorer-file-label--${childNode.value.type}`
-                            )}
-                          >
-                            {fileName}
-                          </span>
-                        )
-                      })}
-                    </span>
-                  )}
-                </div>
-              </div>
+            <div className="segment-explorer-filename">
+              {folderName && (
+                <span className="segment-explorer-filename--path">
+                  {folderName}
+                  {/* hidden slashes for testing snapshots */}
+                  <small>{'/'}</small>
+                </span>
+              )}
+              {/* display all the file segments in this level */}
+              {filesChildrenKeys.length > 0 && (
+                <span className="segment-explorer-files">
+                  {filesChildrenKeys.map((fileChildSegment) => {
+                    const childNode = node.children[fileChildSegment]
+                    if (!childNode || !childNode.value) {
+                      return null
+                    }
+                    const fileName =
+                      childNode.value.pagePath.split('/').pop() || ''
+                    return (
+                      <span
+                        key={fileChildSegment}
+                        className={cx(
+                          'segment-explorer-file-label',
+                          `segment-explorer-file-label--${childNode.value.type}`
+                        )}
+                      >
+                        {fileName}
+                      </span>
+                    )
+                  })}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -190,7 +185,6 @@ export function SegmentsExplorer({
 
 export const DEV_TOOLS_INFO_RENDER_FILES_STYLES = css`
   .segment-explorer-content {
-    overflow-y: auto;
     font-size: var(--size-14);
     margin: -12px -8px;
   }
@@ -210,6 +204,9 @@ export const DEV_TOOLS_INFO_RENDER_FILES_STYLES = css`
     padding-top: 10px;
     padding-bottom: 10px;
     padding-right: 4px;
+    white-space: pre;
+    cursor: default;
+    color: var(--color-gray-1000);
   }
 
   .segment-explorer-children--intended {
@@ -230,15 +227,6 @@ export const DEV_TOOLS_INFO_RENDER_FILES_STYLES = css`
   }
   .segment-explorer-filename--name {
     color: var(--color-gray-800);
-  }
-
-  .segment-explorer-line {
-    white-space: pre;
-    cursor: default;
-  }
-
-  .segment-explorer-line {
-    color: var(--color-gray-1000);
   }
 
   .segment-explorer-files {

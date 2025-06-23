@@ -1033,7 +1033,10 @@ function normalizeConventionFilePath(
   conventionPath: string | undefined
 ) {
   const cwd = process.env.NEXT_RUNTIME === 'edge' ? '' : process.cwd()
-  const relativePath = (conventionPath || '')
+  const nextInternalPrefixRegex =
+    /^(.*[\\/])?next[\\/]dist[\\/]client[\\/]components[\\/]/
+
+  let relativePath = (conventionPath || '')
     // remove turbopack [project] prefix
     .replace(/^\[project\][\\/]/, '')
     // remove the project root from the path
@@ -1042,6 +1045,11 @@ function normalizeConventionFilePath(
     .replace(cwd, '')
     // remove /(src/)?app/ dir prefix
     .replace(/^([\\/])*(src[\\/])?app[\\/]/, '')
+
+  // If it's internal file only keep the filename, strip nextjs internal prefix
+  if (nextInternalPrefixRegex.test(relativePath)) {
+    relativePath = relativePath.replace(nextInternalPrefixRegex, '')
+  }
 
   return relativePath
 }
