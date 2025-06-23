@@ -97,7 +97,7 @@ export function DevToolsPanel({
             aria-describedby="nextjs__container_dev_tools_panel_desc"
             onClose={onCloseDevToolsPanel}
           >
-            <DialogContent>
+            <DialogContent data-nextjs-devtools-panel-dialog-content>
               <DialogHeader data-nextjs-devtools-panel-dialog-header>
                 <div data-nextjs-devtools-panel-header>
                   <div data-nextjs-devtools-panel-header-tab-group>
@@ -143,7 +143,7 @@ export function DevToolsPanel({
                   </div>
                 </div>
               </DialogHeader>
-              <DialogBody>
+              <DialogBody data-nextjs-devtools-panel-dialog-body>
                 <DevToolsPanelTab
                   activeTab={activeTab}
                   devToolsPosition={state.devToolsPosition}
@@ -170,6 +170,20 @@ export const DEVTOOLS_PANEL_STYLES = css`
   /* TODO: Better override dialog header style. This conflicts with issues tab content. */
   [data-nextjs-devtools-panel-dialog-header] {
     margin-bottom: 0 !important;
+  }
+
+  [data-nextjs-devtools-panel-dialog-content] {
+    /* Make DialogContent expand to push footer to bottom. */
+    flex: 1;
+    /* Hide overflow of devtools panel dialog since we want it on the dialog body only. */
+    overflow: hidden;
+  }
+
+  [data-nextjs-devtools-panel-dialog-body] {
+    overflow: auto;
+    /* Make DialogBody a flex container so its children can expand. */
+    display: flex;
+    flex-direction: column;
   }
 
   [data-nextjs-devtools-panel-overlay] {
@@ -218,7 +232,6 @@ export const DEVTOOLS_PANEL_STYLES = css`
     border-radius: var(--rounded-xl);
     box-shadow: var(--shadow-lg);
     position: relative;
-    overflow-y: auto;
     width: 100%;
     max-height: 50vh;
     min-height: 450px;
