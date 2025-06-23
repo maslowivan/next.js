@@ -421,7 +421,10 @@ async function createComponentTreeInternal({
     </>
   ) : undefined
 
-  const dir = ctx.renderOpts.dir || ''
+  const dir =
+    process.env.NEXT_RUNTIME === 'edge'
+      ? process.env.__NEXT_EDGE_PROJECT_DIR!
+      : ctx.renderOpts.dir || ''
 
   const isSegmentViewEnabled =
     process.env.NODE_ENV === 'development' &&
@@ -651,17 +654,7 @@ async function createComponentTreeInternal({
   }
 
   if (isPage) {
-    const pageFilePath = getConventionPathByType(tree, dir, 'page')
-    const PageComponent =
-      isSegmentViewEnabled && pageFilePath
-        ? (pageProps: any) => {
-            return (
-              <SegmentViewNode type={nodeName} pagePath={pageFilePath}>
-                <Component {...pageProps} />
-              </SegmentViewNode>
-            )
-          }
-        : Component
+    const PageComponent = Component
 
     // Assign searchParams to props if this is a page
     let pageElement: React.ReactNode
@@ -727,10 +720,21 @@ async function createComponentTreeInternal({
         )
       }
     }
+
+    const pageFilePath = getConventionPathByType(tree, dir, 'page')
+    const wrappedPageElement =
+      isSegmentViewEnabled && pageFilePath ? (
+        <SegmentViewNode type={nodeName} pagePath={pageFilePath}>
+          {pageElement}
+        </SegmentViewNode>
+      ) : (
+        pageElement
+      )
+
     return [
       actualSegment,
       <React.Fragment key={cacheNodeKey}>
-        {pageElement}
+        {wrappedPageElement}
         {layerAssets}
         <OutletBoundary>
           <MetadataOutlet ready={getViewportReady} />
@@ -742,18 +746,7 @@ async function createComponentTreeInternal({
       isPossiblyPartialResponse,
     ]
   } else {
-    const layoutFilePath = getConventionPathByType(tree, dir, 'layout')
-    const SegmentComponent =
-      isSegmentViewEnabled && layoutFilePath
-        ? (segmentProps: any) => {
-            return (
-              <SegmentViewNode type={nodeName} pagePath={layoutFilePath}>
-                <Component {...segmentProps} />
-              </SegmentViewNode>
-            )
-          }
-        : Component
-
+    const SegmentComponent = Component
     const isRootLayoutWithChildrenSlotAndAtLeastOneMoreSlot =
       rootLayoutAtThisLevel &&
       'children' in parallelRoutes &&
@@ -912,10 +905,21 @@ async function createComponentTreeInternal({
         )
       }
     }
+
+    const layoutFilePath = getConventionPathByType(tree, dir, 'layout')
+    const wrappedSegmentNode =
+      isSegmentViewEnabled && layoutFilePath ? (
+        <SegmentViewNode type={nodeName} pagePath={layoutFilePath}>
+          {segmentNode}
+        </SegmentViewNode>
+      ) : (
+        segmentNode
+      )
+
     // For layouts we just render the component
     return [
       actualSegment,
-      segmentNode,
+      wrappedSegmentNode,
       parallelRouteCacheNodeSeedData,
       loadingData,
       isPossiblyPartialResponse,
@@ -1048,11 +1052,11 @@ function getConventionPathByType(
   conventionType: 'layout' | 'template' | 'page'
 ) {
   const modules = tree[2]
-  const conventionPath_ = modules[conventionType]
+  const conventionPath = modules[conventionType]
     ? modules[conventionType][1]
     : undefined
-  if (conventionPath_) {
-    return normalizeConventionFilePath(dir, conventionPath_)
+  if (conventionPath) {
+    return normalizeConventionFilePath(dir, conventionPath)
   }
   return undefined
 }

@@ -40,6 +40,23 @@ describe('segment-explorer', () => {
     `)
   })
 
+  it('should render the segment explorer for parallel routes in edge runtime', async () => {
+    const browser = await next.browser('/parallel-routes-edge')
+    expect(await getSegmentExplorerContent(browser)).toMatchInlineSnapshot(`
+     "app/
+     layout.tsx
+     parallel-routes-edge/
+     layout.tsx
+     page.tsx
+     @bar/
+     layout.tsx
+     page.tsx
+     @foo/
+     layout.tsx
+     page.tsx"
+    `)
+  })
+
   it('should render the segment explorer for nested routes', async () => {
     const browser = await next.browser('/blog/~/grid')
     expect(await getSegmentExplorerContent(browser)).toMatchInlineSnapshot(`
@@ -89,5 +106,12 @@ describe('segment-explorer', () => {
      template.tsx
      page.tsx"
     `)
+  })
+
+  it('should indicate segment explorer is not available for pages router', async () => {
+    const browser = await next.browser('/pages-router')
+    expect(await getSegmentExplorerContent(browser)).toMatchInlineSnapshot(
+      `"Route Info currently is only available for the App Router."`
+    )
   })
 })
