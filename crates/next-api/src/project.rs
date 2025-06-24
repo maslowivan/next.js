@@ -986,6 +986,7 @@ impl Project {
         Ok(get_edge_compile_time_info(
             self.project_path(),
             this.define_env.edge(),
+            self.env(),
         ))
     }
 
@@ -1306,6 +1307,7 @@ impl Project {
                 self.next_config(),
                 NextRuntime::Edge,
                 self.encryption_key(),
+                self.edge_compile_time_info().environment(),
             ),
             get_edge_resolve_options_context(
                 self.project_path(),
@@ -1361,6 +1363,7 @@ impl Project {
                 self.next_config(),
                 NextRuntime::NodeJs,
                 self.encryption_key(),
+                self.server_compile_time_info().environment(),
             ),
             get_server_resolve_options_context(
                 self.project_path(),
@@ -1473,6 +1476,7 @@ impl Project {
                 self.next_config(),
                 NextRuntime::NodeJs,
                 self.encryption_key(),
+                self.server_compile_time_info().environment(),
             ),
             get_server_resolve_options_context(
                 self.project_path(),
@@ -1528,6 +1532,7 @@ impl Project {
                 self.next_config(),
                 NextRuntime::Edge,
                 self.encryption_key(),
+                self.edge_compile_time_info().environment(),
             ),
             get_edge_resolve_options_context(
                 self.project_path(),
