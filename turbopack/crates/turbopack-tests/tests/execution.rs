@@ -37,6 +37,7 @@ use turbopack_core::{
     context::AssetContext,
     environment::{Environment, ExecutionEnvironment, NodeJsEnvironment},
     file_source::FileSource,
+    ident::Layer,
     issue::IssueDescriptionExt,
     reference_type::{InnerAssets, ReferenceType},
     resolve::{
@@ -411,7 +412,7 @@ async fn run_test_operation(prepared_test: ResolvedVc<PreparedTest>) -> Result<V
             ..Default::default()
         }
         .cell(),
-        rcstr!("test"),
+        Layer::new(rcstr!("test")),
     ));
 
     let chunking_context = NodeJsChunkingContext::builder(
