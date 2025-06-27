@@ -88,7 +88,7 @@ describe.each([
     } else {
       it('should error the build if Math.random() happens before some component outside a Suspense boundary is complete', async () => {
         try {
-          await next.start()
+          await next.build()
         } catch {
           // we expect the build to fail
         }

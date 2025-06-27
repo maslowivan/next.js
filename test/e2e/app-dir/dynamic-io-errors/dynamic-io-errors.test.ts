@@ -47,7 +47,7 @@ describe.each([
     } else {
       it('should error the build if generateMetadata is dynamic when the rest of the route is prerenderable', async () => {
         try {
-          await next.start()
+          await next.build()
         } catch {
           // we expect the build to fail
         }
@@ -166,7 +166,7 @@ describe.each([
       // This test is just here because there was a bug when dynamic metadata was used alongside another dynamic IO violation which caused the validation to be skipped.
       it('should error the build for the correct reason when there is a dynamic IO violation alongside dynamic metadata', async () => {
         try {
-          await next.start()
+          await next.build()
         } catch {
           // we expect the build to fail
         }
@@ -300,7 +300,7 @@ describe.each([
     } else {
       it('should error the build if generateMetadata is dynamic when the rest of the route is prerenderable', async () => {
         try {
-          await next.start()
+          await next.build()
         } catch {
           // we expect the build to fail
         }
@@ -420,7 +420,7 @@ describe.each([
     } else {
       it('should error the build if generateViewport is dynamic', async () => {
         try {
-          await next.start()
+          await next.build()
         } catch {
           // we expect the build to fail
         }
@@ -502,7 +502,7 @@ describe.each([
     } else {
       it('should error the build if generateViewport is dynamic even if there are other uses of dynamic on the page', async () => {
         try {
-          await next.start()
+          await next.build()
         } catch {
           // we expect the build to fail
         }
@@ -573,9 +573,8 @@ describe.each([
     } else {
       it('should not error the build when all routes are static', async () => {
         try {
-          await next.start()
+          await next.build()
         } catch {
-          // we expect the build to fail
           throw new Error('expected build not to fail for fully static project')
         }
       })
@@ -694,7 +693,7 @@ describe.each([
     } else {
       it('should error the build if dynamic IO happens in the root (outside a Suspense)', async () => {
         try {
-          await next.start()
+          await next.build()
         } catch {
           // we expect the build to fail
         }

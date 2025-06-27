@@ -124,7 +124,7 @@ describe.each([
     } else {
       it('should error the build if dynamic IO happens in the root (outside a Suspense)', async () => {
         try {
-          await next.start()
+          await next.build()
         } catch {
           // we expect the build to fail
         }
@@ -358,7 +358,7 @@ describe.each([
     } else {
       it('should error the build if dynamic IO happens in the root (outside a Suspense)', async () => {
         try {
-          await next.start()
+          await next.build()
         } catch {
           // we expect the build to fail
         }
@@ -539,7 +539,7 @@ describe.each([
     } else {
       it('should error the build if dynamic IO happens in the root (outside a Suspense)', async () => {
         try {
-          await next.start()
+          await next.build()
         } catch {
           // we expect the build to fail
         }
