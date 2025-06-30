@@ -60,6 +60,16 @@ function LoadingSegmentNode(): React.ReactNode {
   return null
 }
 
+export function SegmentViewStateNode({ page }: { page: string }) {
+  useLayoutEffect(() => {
+    dispatcher.segmentExplorerUpdateRouteState(page)
+    return () => {
+      dispatcher.segmentExplorerUpdateRouteState('')
+    }
+  }, [page])
+  return null
+}
+
 export function SegmentViewNode({
   type,
   pagePath,

@@ -17,6 +17,7 @@ import {
   ACTION_BUILDING_INDICATOR_SHOW,
   ACTION_RENDERING_INDICATOR_HIDE,
   ACTION_RENDERING_INDICATOR_SHOW,
+  ACTION_DEVTOOL_UPDATE_ROUTE_STATE,
 } from './dev-overlay/shared'
 
 import { startTransition, useInsertionEffect } from 'react'
@@ -53,6 +54,7 @@ export interface Dispatcher {
   renderingIndicatorShow(): void
   segmentExplorerNodeAdd(nodeState: SegmentNodeState): void
   segmentExplorerNodeRemove(nodeState: SegmentNodeState): void
+  segmentExplorerUpdateRouteState(page: string): void
 }
 
 type Dispatch = ReturnType<typeof useErrorOverlayReducer>[1]
@@ -146,6 +148,11 @@ export const dispatcher: Dispatcher = {
   segmentExplorerNodeRemove: createQueuable(
     (_: Dispatch, nodeState: SegmentNodeState) => {
       removeSegmentNode(nodeState)
+    }
+  ),
+  segmentExplorerUpdateRouteState: createQueuable(
+    (dispatch: Dispatch, page: string) => {
+      dispatch({ type: ACTION_DEVTOOL_UPDATE_ROUTE_STATE, page })
     }
   ),
 }
