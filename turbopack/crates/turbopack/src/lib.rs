@@ -886,8 +886,13 @@ impl AssetContext for ModuleAssetContext {
 }
 
 #[turbo_tasks::function]
-pub fn emit_with_completion(asset: Vc<Box<dyn OutputAsset>>, output_dir: FileSystemPath) {
-    let _ = emit_assets_aggregated(asset, output_dir);
+pub async fn emit_with_completion(
+    asset: Vc<Box<dyn OutputAsset>>,
+    output_dir: FileSystemPath,
+) -> Result<()> {
+    emit_assets_aggregated(asset, output_dir)
+        .as_side_effect()
+        .await
 }
 
 #[turbo_tasks::function(operation)]
@@ -899,9 +904,14 @@ pub fn emit_with_completion_operation(
 }
 
 #[turbo_tasks::function]
-fn emit_assets_aggregated(asset: Vc<Box<dyn OutputAsset>>, output_dir: FileSystemPath) {
+async fn emit_assets_aggregated(
+    asset: Vc<Box<dyn OutputAsset>>,
+    output_dir: FileSystemPath,
+) -> Result<()> {
     let aggregated = aggregate(asset);
-    let _ = emit_aggregated_assets(aggregated, output_dir);
+    emit_aggregated_assets(aggregated, output_dir)
+        .as_side_effect()
+        .await
 }
 
 #[turbo_tasks::function]
@@ -911,11 +921,15 @@ async fn emit_aggregated_assets(
 ) -> Result<()> {
     match &*aggregated.content().await? {
         AggregatedGraphNodeContent::Asset(asset) => {
-            let _ = emit_asset_into_dir(**asset, output_dir);
+            emit_asset_into_dir(**asset, output_dir)
+                .as_side_effect()
+                .await?;
         }
         AggregatedGraphNodeContent::Children(children) => {
             for aggregated in children {
-                let _ = emit_aggregated_assets(**aggregated, output_dir.clone());
+                emit_aggregated_assets(**aggregated, output_dir.clone())
+                    .as_side_effect()
+                    .await?;
             }
         }
     }
@@ -924,7 +938,11 @@ async fn emit_aggregated_assets(
 
 #[turbo_tasks::function]
 pub async fn emit_asset(asset: Vc<Box<dyn OutputAsset>>) -> Result<()> {
-    let _ = asset.content().write(asset.path().await?.clone_value());
+    asset
+        .content()
+        .write(asset.path().await?.clone_value())
+        .as_side_effect()
+        .await?;
 
     Ok(())
 }
@@ -936,7 +954,7 @@ pub async fn emit_asset_into_dir(
 ) -> Result<()> {
     let dir = output_dir.clone();
     if asset.path().await?.is_inside_ref(&dir) {
-        let _ = emit_asset(asset);
+        emit_asset(asset).as_side_effect().await?;
     }
     Ok(())
 }
