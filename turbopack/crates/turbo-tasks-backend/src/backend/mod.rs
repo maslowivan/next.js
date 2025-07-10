@@ -2418,10 +2418,8 @@ impl<B: BackingStorage> TurboTasksBackendInner<B> {
 
         let mut ctx = self.execute_context(turbo_tasks);
         let root_tasks = self.root_tasks.lock().clone();
-        let len = root_tasks.len();
 
-        for (i, task_id) in root_tasks.into_iter().enumerate() {
-            println!("Verifying graph from root {task_id} {i}/{len}...");
+        for task_id in root_tasks.into_iter() {
             let mut queue = VecDeque::new();
             let mut visited = FxHashSet::default();
             let mut aggregated_nodes = FxHashSet::default();
@@ -2450,7 +2448,7 @@ impl<B: BackingStorage> TurboTasksBackendInner<B> {
                 if task_id != root_task_id
                     && !uppers.iter().any(|upper| aggregated_nodes.contains(upper))
                 {
-                    println!(
+                    panic!(
                         "Task {} {} doesn't report to any root but is reachable from one (uppers: \
                          {:?})",
                         task_id,
@@ -2473,7 +2471,7 @@ impl<B: BackingStorage> TurboTasksBackendInner<B> {
                     if let Some((flag, _)) = collectibles.get_mut(&collectible) {
                         *flag = true
                     } else {
-                        println!(
+                        panic!(
                             "Task {} has a collectible {:?} that is not in any upper task",
                             task_id, collectible
                         );
@@ -2509,9 +2507,13 @@ impl<B: BackingStorage> TurboTasksBackendInner<B> {
                         let in_upper = get!(task, AggregatedDirtyContainer { task: task_id })
                             .is_some_and(|dirty| dirty.get(self.session_id) > 0);
                         if !in_upper {
-                            println!(
-                                "Task {} is dirty, but is not listed in the upper task {}",
-                                task_id, upper_id
+                            panic!(
+                                "Task {} ({}) is dirty, but is not listed in the upper task {} \
+                                 ({})",
+                                task_id,
+                                ctx.get_task_description(task_id),
+                                upper_id,
+                                ctx.get_task_description(upper_id)
                             );
                         }
                     }
@@ -2531,7 +2533,8 @@ impl<B: BackingStorage> TurboTasksBackendInner<B> {
                             .iter()
                             .map(|t| format!("{t} {}", ctx.get_task_description(*t)))
                             .collect::<Vec<_>>()
-                    );
+                    )
+                    .unwrap();
 
                     let task_id = collectible.cell.task;
                     let mut queue = {
@@ -2541,7 +2544,7 @@ impl<B: BackingStorage> TurboTasksBackendInner<B> {
                     let mut visited = FxHashSet::default();
                     for &upper_id in queue.iter() {
                         visited.insert(upper_id);
-                        writeln!(stdout, "{task_id:?} -> {upper_id:?}");
+                        writeln!(stdout, "{task_id:?} -> {upper_id:?}").unwrap();
                     }
                     while let Some(task_id) = queue.pop() {
                         let desc = ctx.get_task_description(task_id);
@@ -2555,24 +2558,26 @@ impl<B: BackingStorage> TurboTasksBackendInner<B> {
                         writeln!(
                             stdout,
                             "upper {task_id} {desc} collectible={aggregated_collectible}"
-                        );
+                        )
+                        .unwrap();
                         if task_ids.contains(&task_id) {
                             writeln!(
                                 stdout,
                                 "Task has an upper connection to an aggregated task that doesn't \
                                  reference it. Upper connection is invalid!"
-                            );
+                            )
+                            .unwrap();
                         }
                         for upper_id in uppers {
-                            writeln!(stdout, "{task_id:?} -> {upper_id:?}");
+                            writeln!(stdout, "{task_id:?} -> {upper_id:?}").unwrap();
                             if !visited.contains(&upper_id) {
                                 queue.push(upper_id);
                             }
                         }
                     }
+                    panic!("See stdout for more details");
                 }
             }
-            println!("visited {task_id} {} tasks", visited.len());
         }
     }
 
