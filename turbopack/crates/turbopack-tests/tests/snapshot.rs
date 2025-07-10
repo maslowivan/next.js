@@ -3,7 +3,7 @@
 
 mod util;
 
-use std::{collections::VecDeque, fs, path::PathBuf};
+use std::{collections::VecDeque, fs, io, path::PathBuf, sync::Once};
 
 use anyhow::{Context, Result, bail};
 use dunce::canonicalize;
@@ -152,9 +152,47 @@ fn default_runtime_type() -> RuntimeType {
     RuntimeType::Dummy
 }
 
+fn is_empty_dir_tree(dir_entries: impl IntoIterator<Item = io::Result<fs::DirEntry>>) -> bool {
+    for entry in dir_entries.into_iter() {
+        let entry = entry.unwrap();
+        if !entry.file_type().unwrap().is_dir()
+            || !is_empty_dir_tree(fs::read_dir(entry.path()).unwrap())
+        {
+            return false;
+        }
+    }
+    true
+}
+
 #[testing::fixture("tests/snapshot/*/*/", exclude("node_modules"))]
 fn test(resource: PathBuf) {
     let resource = canonicalize(resource).unwrap();
+
+    let mut has_output_dir = false;
+    let contents = fs::read_dir(&resource)
+        .unwrap()
+        .filter(|entry| {
+            if entry.as_ref().unwrap().file_name() == "output" {
+                has_output_dir = true;
+                false
+            } else {
+                true
+            }
+        })
+        .collect::<Vec<_>>();
+    if is_empty_dir_tree(contents) {
+        // a directory without input or config is invalid
+        if *UPDATE {
+            fs::remove_dir_all(&resource).unwrap();
+        } else if has_output_dir {
+            let output_dir = resource.join("output");
+            if !is_empty_dir_tree(fs::read_dir(output_dir).unwrap()) {
+                panic!("{resource:?} contains a non-empty output directory, but no input files");
+            }
+        }
+        return;
+    }
+
     // Separating this into a different function fixes my IDE's types for some
     // reason...
     run(resource).unwrap();
@@ -162,7 +200,8 @@ fn test(resource: PathBuf) {
 
 #[tokio::main(flavor = "current_thread")]
 async fn run(resource: PathBuf) -> Result<()> {
-    register();
+    static REGISTER_ONCE: Once = Once::new();
+    REGISTER_ONCE.call_once(register);
 
     let tt = TurboTasks::new(TurboTasksBackend::new(
         BackendOptions {
