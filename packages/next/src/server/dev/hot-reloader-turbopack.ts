@@ -346,6 +346,13 @@ export async function createHotReloaderTurbopack(
       p.startsWith('server/app')
     )
 
+    // Edge uses the browser runtime which already disposes chunks individually.
+    // TODO: process.env.NEXT_RUNTIME is 'nodejs' even though Node.js runtime is not used.
+    if ('__turbopack_clear_chunk_cache__' in globalThis) {
+      ;(globalThis as any).__turbopack_clear_chunk_cache__()
+    }
+
+    // TODO: Stop re-evaluating React Client once it relies on Turbopack's chunk cache.
     if (hasAppPaths) {
       deleteFromRequireCache(
         require.resolve(
