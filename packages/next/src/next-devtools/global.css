@@ -1,3 +1,5 @@
+@import './normalize.css';
+
 /* devtool global css variables */
 :host {
   /* variables */
