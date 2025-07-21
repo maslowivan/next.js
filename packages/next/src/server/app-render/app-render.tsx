@@ -1242,6 +1242,7 @@ async function renderToHTMLOrFlightImpl(
         case 'prerender':
         case 'prerender-client':
         case 'cache':
+        case 'private-cache':
           return true
         case 'prerender-ppr':
         case 'prerender-legacy':
@@ -1656,7 +1657,10 @@ async function renderToHTMLOrFlightImpl(
       metadata
     )
 
-    if (workStore.invalidDynamicUsageError) {
+    // Invalid dynamic usages should only error the request in development.
+    // In production, it's better to produce a result.
+    // (the dynamic error will still be thrown inside the component tree, but it's catchable by error boundaries)
+    if (workStore.invalidDynamicUsageError && workStore.dev) {
       throw workStore.invalidDynamicUsageError
     }
 
@@ -2448,11 +2452,12 @@ async function spawnDynamicValidationInDev(
 
   // We don't need to continue the prerender process if we already
   // detected invalid dynamic usage in the initial prerender phase.
-  if (workStore.invalidDynamicUsageError) {
+  const { invalidDynamicUsageError } = workStore
+  if (invalidDynamicUsageError) {
     resolveValidation(
       <LogSafely
         fn={() => {
-          console.error(workStore.invalidDynamicUsageError)
+          console.error(invalidDynamicUsageError)
         }}
       />
     )
