@@ -607,7 +607,6 @@ export default class NextNodeServer extends BaseServer<
     res: NodeNextResponse,
     options: {
       result: RenderResult
-      type: 'html' | 'json' | 'rsc'
       generateEtags: boolean
       poweredByHeader: boolean
       cacheControl: CacheControl | undefined
@@ -617,7 +616,6 @@ export default class NextNodeServer extends BaseServer<
       req: req.originalRequest,
       res: res.originalResponse,
       result: options.result,
-      type: options.type,
       generateEtags: options.generateEtags,
       poweredByHeader: options.poweredByHeader,
       cacheControl: options.cacheControl,
