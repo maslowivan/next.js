@@ -1,4 +1,7 @@
-use std::sync::{LockResult, Mutex, MutexGuard};
+use std::{
+    path::PathBuf,
+    sync::{LockResult, Mutex, MutexGuard},
+};
 
 use concurrent_queue::ConcurrentQueue;
 use rustc_hash::FxHashMap;
@@ -13,10 +16,10 @@ pub enum WriteContent {
     Link(ReadRef<LinkContent>),
 }
 
-type InnerMap = FxHashMap<String, FxHashMap<Invalidator, Option<WriteContent>>>;
+type InnerMap = FxHashMap<PathBuf, FxHashMap<Invalidator, Option<WriteContent>>>;
 
 pub struct InvalidatorMap {
-    queue: ConcurrentQueue<(String, Invalidator, Option<WriteContent>)>,
+    queue: ConcurrentQueue<(PathBuf, Invalidator, Option<WriteContent>)>,
     map: Mutex<InnerMap>,
 }
 
@@ -44,7 +47,7 @@ impl InvalidatorMap {
 
     pub fn insert(
         &self,
-        key: String,
+        key: PathBuf,
         invalidator: Invalidator,
         write_content: Option<WriteContent>,
     ) {
@@ -66,7 +69,15 @@ impl Serialize for InvalidatorMap {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_newtype_struct("InvalidatorMap", &*self.lock().unwrap())
+        // TODO: This stores absolute `PathBuf`s, which are machine-specific. This should
+        // normalize/denormalize paths relative to the disk filesystem root.
+        //
+        // Potential optimization: We invalidate all fs reads immediately upon resuming from a
+        // persisted cache, but we don't invalidate the fs writes. Those read invalidations trigger
+        // re-inserts into the `InvalidatorMap`. If we knew that certain invalidators were only
+        // needed for reads, we could potentially avoid serializing those paths entirely.
+        let inner: &InnerMap = &self.lock().unwrap();
+        serializer.serialize_newtype_struct("InvalidatorMap", inner)
     }
 }
 
