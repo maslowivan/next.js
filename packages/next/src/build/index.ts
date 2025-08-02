@@ -108,8 +108,15 @@ import type { EventBuildFeatureUsage } from '../telemetry/events'
 import { Telemetry } from '../telemetry/storage'
 import {
   createPagesMapping,
+  collectAppFiles,
   getStaticInfoIncludingLayouts,
   sortByPageExts,
+  processPageRoutes,
+  processAppRoutes,
+  processLayoutRoutes,
+  extractSlotsFromAppRoutes,
+  type RouteInfo,
+  type SlotInfo,
 } from './entries'
 import { PAGE_TYPES } from '../lib/page-types'
 import { generateBuildId } from './generate-build-id'
@@ -211,6 +218,10 @@ import {
   sortPages,
   sortSortableRouteObjects,
 } from '../shared/lib/router/utils/sortable-routes'
+import {
+  createRouteTypesManifest,
+  writeRouteTypesManifest,
+} from '../server/lib/router-utils/route-types-utils'
 
 type Fallback = null | boolean | string
 
@@ -1113,12 +1124,6 @@ export default async function build(
         await recursiveDelete(distDir, /^cache/)
       }
 
-      // For app directory, we run type checking after build. That's because
-      // we dynamically generate types for each layout and page in the app
-      // directory.
-      if (!appDir && !isCompileMode)
-        await startTypeChecking(typeCheckingOptions)
-
       if (appDir && 'exportPathMap' in config) {
         Log.error(
           'The "exportPathMap" configuration cannot be used with the "app" directory. Please use generateStaticParams() instead.'
@@ -1206,6 +1211,7 @@ export default async function build(
       NextBuildContext.mappedPages = mappedPages
 
       let mappedAppPages: MappedPages | undefined
+      let mappedAppLayouts: MappedPages | undefined
       let denormalizedAppPages: string[] | undefined
 
       if (appDir) {
@@ -1213,26 +1219,40 @@ export default async function build(
           process.env.NEXT_PRIVATE_APP_PATHS || '[]'
         )
 
-        let appPaths = Boolean(process.env.NEXT_PRIVATE_APP_PATHS)
-          ? providedAppPaths
-          : await nextBuildSpan
-              .traceChild('collect-app-paths')
-              .traceAsyncFn(() =>
-                recursiveReadDir(appDir, {
-                  pathnameFilter: (absolutePath) =>
-                    validFileMatcher.isAppRouterPage(absolutePath) ||
-                    // For now we only collect the root /not-found page in the app
-                    // directory as the 404 fallback
-                    validFileMatcher.isRootNotFound(absolutePath),
-                  ignorePartFilter: (part) => part.startsWith('_'),
-                })
-              )
+        let appPaths: string[]
+        let layoutPaths: string[]
+
+        if (Boolean(process.env.NEXT_PRIVATE_APP_PATHS)) {
+          appPaths = providedAppPaths
+          layoutPaths = []
+        } else {
+          // Collect both app pages and layouts in a single directory traversal
+          const result = await nextBuildSpan
+            .traceChild('collect-app-files')
+            .traceAsyncFn(() => collectAppFiles(appDir, config.pageExtensions))
+
+          appPaths = result.appPaths
+          layoutPaths = result.layoutPaths
+        }
 
         mappedAppPages = await nextBuildSpan
           .traceChild('create-app-mapping')
           .traceAsyncFn(() =>
             createPagesMapping({
               pagePaths: appPaths,
+              isDev: false,
+              pagesType: PAGE_TYPES.APP,
+              pageExtensions: config.pageExtensions,
+              pagesDir,
+              appDir,
+            })
+          )
+
+        mappedAppLayouts = await nextBuildSpan
+          .traceChild('create-app-layouts')
+          .traceAsyncFn(() =>
+            createPagesMapping({
+              pagePaths: layoutPaths,
               isDev: false,
               pagesType: PAGE_TYPES.APP,
               pageExtensions: config.pageExtensions,
@@ -1288,6 +1308,49 @@ export default async function build(
         pages: pagesPageKeys,
         app: appPaths.length > 0 ? appPaths : undefined,
       }
+
+      await nextBuildSpan
+        .traceChild('generate-route-types')
+        .traceAsyncFn(async () => {
+          const routeTypesFilePath = path.join(distDir, 'types', 'routes.d.ts')
+          await fs.mkdir(path.dirname(routeTypesFilePath), { recursive: true })
+
+          let pageRoutes: RouteInfo[] = []
+          let appRoutes: RouteInfo[] = []
+          let layoutRoutes: RouteInfo[] = []
+          let slots: SlotInfo[] = []
+
+          // Build pages routes
+          const processedPages = processPageRoutes(mappedPages, dir)
+          // We combine both page routes and API routes
+          pageRoutes = [
+            ...processedPages.pageRoutes,
+            ...processedPages.pageApiRoutes,
+          ]
+
+          // Build app routes
+          if (appDir && mappedAppPages) {
+            slots = extractSlotsFromAppRoutes(mappedAppPages)
+            appRoutes = processAppRoutes(mappedAppPages, dir)
+          }
+
+          // Build app layouts
+          if (appDir && mappedAppLayouts) {
+            layoutRoutes = processLayoutRoutes(mappedAppLayouts, dir)
+          }
+
+          const routeTypesManifest = await createRouteTypesManifest({
+            dir,
+            pageRoutes,
+            appRoutes,
+            layoutRoutes,
+            slots,
+            redirects: config.redirects,
+            rewrites: config.rewrites,
+          })
+
+          await writeRouteTypesManifest(routeTypesManifest, routeTypesFilePath)
+        })
 
       // Turbopack already handles conflicting app and page routes.
       if (!isTurbopack) {
@@ -1460,6 +1523,11 @@ export default async function build(
               : undefined,
           } satisfies RoutesManifest
         })
+
+      // For pages directory, we run type checking after route collection but before build.
+      if (!appDir && !isCompileMode) {
+        await startTypeChecking(typeCheckingOptions)
+      }
 
       let clientRouterFilters:
         | undefined
