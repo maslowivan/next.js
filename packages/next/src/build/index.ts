@@ -76,8 +76,8 @@ import {
   MIDDLEWARE_REACT_LOADABLE_MANIFEST,
   SERVER_REFERENCE_MANIFEST,
   FUNCTIONS_CONFIG_MANIFEST,
-  UNDERSCORE_NOT_FOUND_ROUTE_ENTRY,
   UNDERSCORE_NOT_FOUND_ROUTE,
+  UNDERSCORE_NOT_FOUND_ROUTE_ENTRY,
   DYNAMIC_CSS_MANIFEST,
   TURBOPACK_CLIENT_MIDDLEWARE_MANIFEST,
 } from '../shared/lib/constants'
@@ -3090,12 +3090,6 @@ export default async function build(
             ]
 
             for (const prerenderedRoute of prerenderedRoutes) {
-              // TODO: check if still needed?
-              // Exclude the /_not-found route.
-              if (prerenderedRoute.pathname === UNDERSCORE_NOT_FOUND_ROUTE) {
-                continue
-              }
-
               if (
                 isRoutePPREnabled &&
                 prerenderedRoute.fallbackRouteParams &&
@@ -3114,7 +3108,6 @@ export default async function build(
             // Handle all the static routes.
             for (const route of staticPrerenderedRoutes) {
               if (isDynamicRoute(page) && route.pathname === page) continue
-              if (route.pathname === UNDERSCORE_NOT_FOUND_ROUTE) continue
 
               const {
                 metadata = {},
@@ -3164,9 +3157,13 @@ export default async function build(
                 }
 
                 const meta = collectMeta(metadata)
+                const status =
+                  route.pathname === UNDERSCORE_NOT_FOUND_ROUTE
+                    ? 404
+                    : meta.status
 
                 prerenderManifest.routes[route.pathname] = {
-                  initialStatus: meta.status,
+                  initialStatus: status,
                   initialHeaders: meta.headers,
                   renderingMode: isAppPPREnabled
                     ? isRoutePPREnabled
